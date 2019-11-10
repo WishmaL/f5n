@@ -54,7 +54,7 @@ public class MainActivity extends AppCompatActivity implements
             @Override
             public void onCheckedChanged(final CompoundButton buttonView, final boolean isChecked) {
                 if (isChecked) {
-                    new DumpLogToFile().execute();
+                    new DumpLogToFile().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
                 }
             }
         });
@@ -176,18 +176,14 @@ public class MainActivity extends AppCompatActivity implements
                 }
                 logFile = new File(dir.getAbsolutePath() + "/f5n-logcat-dump.txt");
                 if (!logFile.exists()) {
-                    try {
-                        logFile.createNewFile();
-                        fOut = new FileOutputStream(logFile, true);
-                        myOutWriter = new OutputStreamWriter(fOut);
-                        String header = "----------- Log for app session " + TimeFormat
-                                .millisToDateTime(System.currentTimeMillis())
-                                + " -----------\n";
-                        myOutWriter.append(header);
-                    } catch (IOException e) {
-                        Log.e(TAG, "Error : " + e);
-                    }
+                    logFile.createNewFile();
                 }
+                fOut = new FileOutputStream(logFile, true);
+                myOutWriter = new OutputStreamWriter(fOut);
+                String header = "\n\n----------- Log for app session " + TimeFormat
+                        .millisToDateTime(System.currentTimeMillis())
+                        + " -----------\n";
+                myOutWriter.append(header);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -204,6 +200,7 @@ public class MainActivity extends AppCompatActivity implements
 
                 while ((line = bufferedReader.readLine()) != null) {
                     myOutWriter.append(line);
+                    myOutWriter.append("\n");
                     myOutWriter.flush();
                 }
             } catch (IOException e) {
