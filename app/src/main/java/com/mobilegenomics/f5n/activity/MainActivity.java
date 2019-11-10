@@ -4,11 +4,16 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
+import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -18,19 +23,41 @@ import com.mobilegenomics.f5n.R;
 import com.mobilegenomics.f5n.core.AppMode;
 import com.mobilegenomics.f5n.support.PermissionResultCallback;
 import com.mobilegenomics.f5n.support.PermissionUtils;
+import com.mobilegenomics.f5n.support.TimeFormat;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity implements
         ActivityCompat.OnRequestPermissionsResultCallback, PermissionResultCallback {
 
+    private static final String TAG = MainActivity.class.getSimpleName();
+
     PermissionUtils permissionUtils;                    // An instance of the permissionUtils
 
     ArrayList<String> permissions = new ArrayList<>();
+
+    CheckBox checkBoxDumpLog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        checkBoxDumpLog = findViewById(R.id.checkbox_dump_logcat);
+
+        checkBoxDumpLog.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(final CompoundButton buttonView, final boolean isChecked) {
+                if (isChecked) {
+                    new DumpLogToFile().execute();
+                }
+            }
+        });
 
         // Setup the permissions
         permissionUtils = new PermissionUtils(MainActivity.this);
@@ -127,4 +154,75 @@ public class MainActivity extends AppCompatActivity implements
         }
         return super.onOptionsItemSelected(item);
     }
+
+    static class DumpLogToFile extends AsyncTask<Void, String, Void> {
+
+        private static final String folderName = "mobile-genomics";
+
+        private File logFile;
+
+        private FileOutputStream fOut;
+
+        private OutputStreamWriter myOutWriter;
+
+        @Override
+        protected void onPreExecute() {
+            try {
+                Runtime.getRuntime().exec("logcat -c");
+                String dirPath = Environment.getExternalStorageDirectory() + "/" + folderName;
+                File dir = new File(dirPath);
+                if (!dir.exists()) {
+                    dir.mkdirs();
+                }
+                logFile = new File(dir.getAbsolutePath() + "/f5n-logcat-dump.txt");
+                if (!logFile.exists()) {
+                    try {
+                        logFile.createNewFile();
+                        fOut = new FileOutputStream(logFile, true);
+                        myOutWriter = new OutputStreamWriter(fOut);
+                        String header = "----------- Log for app session " + TimeFormat
+                                .millisToDateTime(System.currentTimeMillis())
+                                + " -----------\n";
+                        myOutWriter.append(header);
+                    } catch (IOException e) {
+                        Log.e(TAG, "Error : " + e);
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        @Override
+        protected Void doInBackground(Void... params) {
+            try {
+                Process process = Runtime.getRuntime().exec("logcat");
+                BufferedReader bufferedReader = new BufferedReader(
+                        new InputStreamReader(process.getInputStream()));
+
+                String line = "";
+
+                while ((line = bufferedReader.readLine()) != null) {
+                    myOutWriter.append(line);
+                    myOutWriter.flush();
+                }
+            } catch (IOException e) {
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(final Void aVoid) {
+            super.onPostExecute(aVoid);
+            try {
+                myOutWriter.append("-------------------- End of Log --------------------\n\n");
+                myOutWriter.flush();
+                myOutWriter.close();
+                fOut.close();
+            } catch (IOException e) {
+                Log.e(TAG, "Logcat Dump Error: " + e);
+            }
+        }
+    }
+
 }

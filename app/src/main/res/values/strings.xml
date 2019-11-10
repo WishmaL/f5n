@@ -9,4 +9,6 @@
     <!--Strings used in Demo-->
     <string name="pipeline_description">This will run all the 5 pipeline steps on Ecoli dataset(10MB)\n\nYou can find all the files downloaded, created and the logcat in the <b>mobile-genomics</b> folder in your main storage</string>
 
+    <string name="dump_log_description">Dump Logcat to a File\n(All the logcat messages will be dumped to file called f5n-logcat-dump.txt in main-storage/mobile-genomics folder)</string>
+
 </resources>
