@@ -56,10 +56,10 @@ public class MinITActivity extends AppCompatActivity {
 
                 });
 
-                if (con.login("test", "test")) {
+                if (con.login("anonymous", "")) {
                     con.enterLocalPassiveMode(); // important!
                     con.setFileType(FTP.BINARY_FILE_TYPE);
-
+                    con.setBufferSize(1024000);
                     File fileIn = new File(urls[1]);
                     fileSize = fileIn.length();
 
