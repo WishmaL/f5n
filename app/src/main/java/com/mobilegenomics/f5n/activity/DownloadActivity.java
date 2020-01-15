@@ -56,32 +56,24 @@ public class DownloadActivity extends AppCompatActivity {
                 con.setCopyStreamListener(new CopyStreamAdapter() {
                     @Override
                     public void bytesTransferred(long totalBytesTransferred, int bytesTransferred, long streamSize) {
-                        //this method will be called every time some bytes are transferred
-//                        int percent = (int) (totalBytesTransferred * 100 / fileSize);
-//                        int totalMBTransferred = (int) totalBytesTransferred;
                         publishProgress(totalBytesTransferred);
                     }
 
                 });
 
-                if (con.login("test", "test")) {
+                if (con.login("anonymous", "")) {
                     con.enterLocalPassiveMode(); // important!
                     con.setFileType(FTP.BINARY_FILE_TYPE);
-
+                    con.setBufferSize(1024000);
                     FTPFile[] ff = con.listFiles(urls[1]);
 
                     if (ff != null) {
                         fileSize = (ff[0].getSize());
                     }
 
-//                    FTPFile file = con.mlistFile("/" + urls[1]);
                     OutputStream out = new FileOutputStream(new File(folderPath + "/" + urls[1]));
                     status = con.retrieveFile(urls[1], out);
                     out.close();
-//                    if (result) {
-//                        Log.v("download result", "succeeded");
-////                        Toast.makeText(DownloadActivity.this, "Download Success", Toast.LENGTH_LONG).show();
-//                    }
                     con.logout();
                     con.disconnect();
                 }
@@ -171,7 +163,7 @@ public class DownloadActivity extends AppCompatActivity {
             String path = getIntent().getExtras().getString("DATA_SET_URL");
             String fileName = getIntent().getExtras().getString("FILE_NAME");
             if (path != null && !TextUtils.isEmpty(path)) {
-                urlInputPath.setText(path + "/" + fileName);
+                urlInputPath.setText(path + "/" + fileName + ".zip");
             }
         }
 
